@@ -292,9 +292,7 @@ No other states. No payment state.
 - Railway API: https://paylock-core-production.up.railway.app
 - Checkly Status Page: https://qpm5p92k.checkly-status-page.com/
 - LinkedIn Announcement: https://www.linkedin.com/posts/abobker-awadh-4a69bb72_fintech-trustinfrastructure-deterministicsystems-share-7456464135115948033-QIml
-```
----
-
+  
 ## 📄 License
 
 MIT License © 2026 Dr. Abobker Ahmed Awadh
