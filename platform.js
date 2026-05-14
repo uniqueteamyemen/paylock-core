@@ -9,19 +9,41 @@ app.use(express.json());
 const PLATFORM_SECRET = process.env.PLATFORM_SECRET;
 if (!PLATFORM_SECRET) {
   console.error('FATAL: PLATFORM_SECRET environment variable is required.');
-  process.exit(1); // يفشل التطبيق فورًا إذا لم يتم تعيين السر في متغيرات البيئة
+  process.exit(1);
 }
 
-// إعداد Redis
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+// ========== 2. إعداد Redis مع وضع الطوارئ التلقائي (Automatic Memory Fallback) ==========
+let redis;
+let usingMemoryFallback = false;
 
-// ========== 2. التدقيق: سجل إضافي (Append-only Log) ==========
+if (!process.env.REDIS_URL) {
+  console.log('⚠️  Redis not found. Running in ephemeral in-memory demo mode.');
+  usingMemoryFallback = true;
+  redis = {
+    data: new Map(),
+    async get(key) { return this.data.get(key); },
+    async set(key, value, ...args) { this.data.set(key, value); return 'OK'; },
+    async del(key) { this.data.delete(key); return 1; },
+    async ping() { return 'PONG'; },
+    // دالة مخصصة لدعم سجل التدقيق (appendLog)
+    async rpush(key, value) {
+      if (!this.data.has(key)) this.data.set(key, []);
+      this.data.get(key).push(value);
+      return this.data.get(key).length;
+    }
+  };
+} else {
+  redis = new Redis(process.env.REDIS_URL);
+  console.log('✅ Connected to Redis');
+}
+
+// ========== 3. التدقيق: سجل إضافي (Append-only Log) ==========
 async function appendLog(event) {
   const entry = JSON.stringify({ ...event, ts: Date.now() });
   await redis.rpush('audit_log', entry);
 }
 
-// ========== 3. المتانة: منع تكرار الطلبات (Idempotency Middleware) ==========
+// ========== 4. المتانة: منع تكرار الطلبات (Idempotency Middleware) ==========
 const idempotencyCache = new Map();
 function idempotency(req, res, next) {
   const key = req.headers['idempotency-key'];
@@ -34,7 +56,6 @@ function idempotency(req, res, next) {
   const originalSend = res.json.bind(res);
   res.json = (body) => {
     idempotencyCache.set(key, body);
-    // تنظيف اختياري: حذف المفتاح بعد فترة لمنع تضخم الذاكرة
     setTimeout(() => idempotencyCache.delete(key), 5 * 60 * 1000);
     return originalSend(body);
   };
@@ -42,7 +63,7 @@ function idempotency(req, res, next) {
 }
 app.use(idempotency);
 
-// ========== 4. المتانة: دالة مساعدة للتحقق من صحة المدخلات ==========
+// ========== 5. المتانة: دالة مساعدة للتحقق من صحة المدخلات ==========
 function requireFields(obj, fields) {
   for (const f of fields) {
     if (obj[f] === undefined || obj[f] === null) return false;
@@ -54,7 +75,7 @@ function requireFields(obj, fields) {
 app.get('/v1/health', async (req, res) => {
   try {
     await redis.ping();
-    res.json({ status: 'ok', redis: true, service: 'paylock-core' });
+    res.json({ status: 'ok', redis: !usingMemoryFallback, service: 'paylock-core' });
   } catch (e) {
     res.status(500).json({ status: 'error', redis: false });
   }
@@ -88,10 +109,7 @@ app.post('/v1/session', async (req, res) => {
     receipt_id: receipt_id || null, created_at: Date.now(), signals: []
   };
 
-  // 5. المتانة: وقت انتهاء صلاحية للجلسات
   await redis.set(`session:${h0}`, JSON.stringify(session), 'EX', 3600);
-
-  // تسجيل الحدث
   await appendLog({ type: 'SESSION_CREATED', h0, service_id, device_id });
 
   res.json({ h0, status: 'INITIATED' });
@@ -128,7 +146,6 @@ app.post('/v1/resolve', async (req, res) => {
 
   const session = JSON.parse(sessionData);
 
-  // Idempotency داخلية
   if (session.h1) {
     return res.json({ h1: session.h1, status: 'EXECUTION_PROVEN' });
   }
