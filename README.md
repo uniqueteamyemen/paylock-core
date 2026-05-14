@@ -20,7 +20,13 @@ PayLock Core is a lightweight, stateless protocol that guarantees a payment is c
 The engine **does not handle money, identity, or business logic**. It only records signals and deterministically resolves whether execution is proven.
 
 ---
+## 🐳 Quick Start (Docker)
 
+Run the engine locally in seconds. No configuration required for testing.
+
+```bash
+docker pull uniqueteamyemen/paylock-core:latest
+docker run -d -p 3000:3000 uniqueteamyemen/paylock-core:latest
 ## Base URL
 
 ```
