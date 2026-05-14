@@ -1,13 +1,79 @@
-# PayLock Core
+# PayLock Core – Deterministic Execution & Matching Engine
 
 ![Health Check](https://api.checklyhq.com/v1/badges/checks/c7dc410d-96a2-4409-8524-7b7fa272182a?style=flat&theme=default)
 ![Full Cycle](https://api.checklyhq.com/v1/badges/checks/1de56a50-79c5-42a2-9ce6-3fa5b462aae9?style=flat&theme=default)
 
 [Live System Status](https://qpm5p92k.checkly-status-page.com/)
 
-**Deterministic Payment Execution Engine**
+**"You only pay when execution is provably complete."**
 
-PayLock Core is a lightweight, stateless protocol that guarantees a payment is captured **only after** a digital service has been successfully executed. It acts as a trustless orchestration layer between payment providers and service providers, eliminating chargebacks and disputes by design.
+PayLock Core is a lightweight, stateless protocol that guarantees a transaction outcome is deterministically matched and verified before any payment is captured. It acts as a neutral trust layer that eliminates disputes not by policy, but by mathematical certainty.
+
+> No payment state.  
+> No custody of funds.  
+> Only deterministic execution verification.
+
+---
+
+## 🐳 Quick Start (Docker)
+
+Run the engine locally in seconds.
+
+### Quick Demo (No Redis Required)
+
+Run PayLock Core instantly in ephemeral in-memory demo mode.
+
+```bash
+docker pull uniqueteamyemen/paylock-core:latest
+docker run -d -p 3000:3000 uniqueteamyemen/paylock-core:latest
+```
+
+Health check:
+
+```bash
+curl http://localhost:3000/v1/health
+```
+
+Expected response:
+
+```json
+{"status":"ok","redis":false,"service":"paylock-core"}
+```
+
+Container logs:
+
+```bash
+docker logs <container_id>
+```
+
+Example log output:
+
+```text
+⚠️ Redis not found. Running in ephemeral in-memory demo mode.
+PayLock Core (Production Ready) running on port 3000
+```
+
+### Full Stack Mode (Redis Enabled)
+
+Run PayLock Core with a persistent Redis backend.
+
+```bash
+docker network create paylock-net
+docker run -d --name redis-paylock --network paylock-net redis
+docker run -d -p 3000:3000 --network paylock-net -e REDIS_URL=redis://redis-paylock:6379 uniqueteamyemen/paylock-core:latest
+curl http://localhost:3000/v1/health
+```
+
+Expected response:
+
+```json
+{"status":"ok","redis":true,"service":"paylock-core"}
+```
+
+**Notes:**
+- Demo mode uses temporary in-memory storage and is intended for evaluation and local testing only.
+- Full Stack mode uses Redis persistence and reflects the recommended production-style runtime architecture.
+- Railway deployments automatically connect to Redis through the configured `REDIS_URL`.
 
 ---
 
@@ -20,16 +86,18 @@ PayLock Core is a lightweight, stateless protocol that guarantees a payment is c
 The engine **does not handle money, identity, or business logic**. It only records signals and deterministically resolves whether execution is proven.
 
 ---
-## 🐳 Quick Start (Docker)
 
-Run the engine locally in seconds. No configuration required for testing.
+## 🧪 Live Demo
 
-```bash
-docker pull uniqueteamyemen/paylock-core:latest
-docker run -d -p 3000:3000 uniqueteamyemen/paylock-core:latest
+Public deterministic execution demo:
+
+https://yaqeen-platform-production.up.railway.app/demo.html
+
+---
+
 ## Base URL
 
-```
+```text
 https://paylock-core-production.up.railway.app
 ```
 
@@ -214,3 +282,19 @@ No other states. No payment state.
 
 - `POST /v1/resolve` is fully idempotent. Once an `H1` is generated, subsequent calls return the same `H1`.
 - For stronger replay protection, include an `idempotency-key` header in requests. The engine caches responses for 5 minutes.
+
+---
+
+## 🔗 Links
+
+- GitHub: https://github.com/uniqueteamyemen/paylock-core
+- Live Demo (Yaqeen Platform): https://yaqeen-platform-production.up.railway.app/demo.html
+- Railway API: https://paylock-core-production.up.railway.app
+- Checkly Status Page: https://qpm5p92k.checkly-status-page.com/
+- LinkedIn Announcement: https://www.linkedin.com/posts/abobker-awadh-4a69bb72_fintech-trustinfrastructure-deterministicsystems-share-7456464135115948033-QIml
+```
+---
+
+## 📄 License
+
+MIT License © 2026 Dr. Abobker Ahmed Awadh
