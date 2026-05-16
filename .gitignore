@@ -1,0 +1,11 @@
+node_modules/
+.env
+
+# Local test payloads
+ack.json
+resolve.json
+session.json
+signal.json
+unlock.json
+test-unlock.json
+body.json

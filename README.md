@@ -13,6 +13,8 @@ PayLock Core is a lightweight, stateless protocol that guarantees a transaction 
 > No custody of funds.  
 > Only deterministic execution verification.
 
+**Canonical boundaries (Source of Truth):** see `CANONICAL_BOUNDARIES.md`.
+
 ---
 
 ## 🐳 Quick Start (Docker)
@@ -81,7 +83,10 @@ Expected response:
 
 1.  **Session (H0)** – A client initiates a session, creating a frozen intent. No funds are moved.
 2.  **Signal** – An external signal (e.g., a provider's acknowledgment) is appended to the session. No state change occurs yet.
-3.  **Resolve (H1)** – Once the required signal (`provider_ack`) is present, the engine deterministically issues a proof of execution (`H1`). This proof can be used to trigger fund capture.
+3.  **Unlock (User)** – The user explicitly breaks the lock (`user_unlock`). This is a network-confirmed event recorded as a signal.
+4.  **Resolve (H1)** – Once both required signals (`provider_ack` + `user_unlock`) are present, the engine deterministically issues a proof of execution (`H1`). This proof can be used to trigger fund capture.
+
+**Optional (Provider-Enabled):** If a provider chooses to send payment receipts/cancellations to PayLock via webhooks, PayLock will automatically close cancelled sessions and reject any later `unlock`/`resolve` attempts for those sessions.
 
 The engine **does not handle money, identity, or business logic**. It only records signals and deterministically resolves whether execution is proven.
 
@@ -105,7 +110,9 @@ https://paylock-core-production.up.railway.app
 
 ## Authentication
 
-No authentication is required in this MVP version. Future releases will include API key verification.
+All endpoints except `GET /v1/health` require `x-api-key` and server-side `API_KEY` configuration.
+
+**Note:** The default API key `test-key` is for demo purposes only. Change it immediately before any production use.
 
 ---
 
@@ -211,7 +218,7 @@ Appends an immutable signal to an existing session. **This does not change the s
 
 `POST /v1/resolve`
 
-Deterministically resolves whether the session can be proven as executed. If a signal of type `provider_ack` exists, the engine generates the final execution proof (`H1`) and transitions the session to `EXECUTION_PROVEN`.
+Deterministically resolves whether the session can be proven as executed. If both signals `provider_ack` and `user_unlock` exist, the engine generates the final execution proof (`H1`) and transitions the session to `EXECUTION_PROVEN`.
 
 **This endpoint is idempotent.** Calling it multiple times with the same `h0` will always return the same `H1`.
 
