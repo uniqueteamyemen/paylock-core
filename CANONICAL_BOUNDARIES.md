@@ -25,3 +25,17 @@ PayLock Core is a **neutral deterministic proof layer**. It records signals and 
 - The same user submitting the same payload twice should yield **two different H0 values** (two independent sessions).
 - If the integrator needs "same order, same outcome", they must provide and enforce an external idempotency key at the integration boundary.
 
+## External Integration Environment
+
+The operational integration PoC was performed using the publicly available GitHub-hosted Stripe sample environment:
+
+stripe-samples/subscription-use-cases
+
+This environment was used to validate:
+- webhook synchronization
+- provider acknowledgment behavior
+- deterministic lifecycle progression
+- cancellation enforcement
+- replay consistency
+
+before integration into larger commerce ecosystems.
