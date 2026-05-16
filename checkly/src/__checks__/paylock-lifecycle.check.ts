@@ -6,7 +6,7 @@ new ApiCheck('paylock-lifecycle', {
   frequency: 10,
 
   request: {
-    method: 'POST',
+    method: 'GET',
     url: 'https://paylock-core-production.up.railway.app/v1/health',
   },
 
