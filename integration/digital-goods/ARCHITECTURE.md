@@ -162,3 +162,89 @@ The integration validated:
 
 \- replay-safe execution progression
 
+---
+
+
+
+\# Integration-Specific Adaptations
+
+
+
+\## Additional Unlock Boundary
+
+
+
+During Stripe integration validation, payment\_intent.succeeded alone was intentionally NOT treated as sufficient fulfillment authorization.
+
+
+
+Instead, the lifecycle was extended with:
+
+
+
+provider\_ack
+
+→ user\_unlock
+
+→ deterministic resolve
+
+
+
+Reason:
+
+\- preserve explicit fulfillment gating
+
+\- separate provider confirmation from execution authorization
+
+\- validate post-payment deterministic coordination behavior
+
+
+
+\---
+
+
+
+\## Stripe Webhook Semantics
+
+
+
+Stripe webhooks were treated as:
+
+\- external asynchronous provider signals
+
+\- lifecycle coordination inputs
+
+\- non-authoritative fulfillment completion boundaries
+
+
+
+This distinction was intentionally preserved during integration validation.
+
+
+
+\---
+
+
+
+\## Operational Interpretation
+
+
+
+This integration does NOT claim:
+
+
+
+payment success == automatic deterministic execution
+
+
+
+Instead, the integration validates:
+
+\- asynchronous provider interoperability
+
+\- deterministic lifecycle progression
+
+\- fulfillment authorization separation
+
+\- replay-safe execution coordination
+

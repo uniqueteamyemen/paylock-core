@@ -208,3 +208,72 @@ This integration validated:
 
 \- operational lifecycle integrity under external payment flows
 
+
+---
+
+
+
+\# Integration Adaptation Notes
+
+
+
+\## Explicit user\_unlock Introduction
+
+
+
+An explicit user\_unlock signal was introduced after provider\_ack synchronization.
+
+
+
+Observed lifecycle:
+
+
+
+payment\_intent.succeeded
+
+→ provider\_ack
+
+→ user\_unlock
+
+→ resolve
+
+→ EXECUTION\_PROVEN
+
+
+
+Purpose:
+
+\- prevent automatic fulfillment authorization directly from payment success
+
+\- preserve deterministic execution gating
+
+\- validate controlled lifecycle progression
+
+
+
+\---
+
+
+
+\## Fulfillment Semantics Separation
+
+
+
+Observed behavior confirmed:
+
+
+
+payment success
+
+!=
+
+automatic fulfillment authorization
+
+
+
+Additional lifecycle progression remained required before deterministic resolve execution.
+
+
+
+This behavior was intentionally preserved during integration validation.
+
