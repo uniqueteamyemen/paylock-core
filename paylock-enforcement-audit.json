@@ -1,0 +1,59 @@
+{
+  "generated_at": "2026-05-18T18:30:35.882Z",
+  "target": "https://paylock-core-production.up.railway.app",
+  "chain": "Operational contradiction reproduced -> deterministic gate satisfied",
+  "session": {
+    "receipt_id": "audit-1779129030687",
+    "h0": "7a07c59a770b4dd0a3ea08c7fd46c735b071c66da54da07a94f255582608e6e4",
+    "request_hash": "ebf5612ccfb8d273738a8019e8b99ae7351356fd30ae914c34bb502d694018c1",
+    "status": 200,
+    "response": {
+      "h0": "7a07c59a770b4dd0a3ea08c7fd46c735b071c66da54da07a94f255582608e6e4",
+      "status": "INITIATED"
+    },
+    "result_hash": "2c896dbbe87813dcc4595a0199792186e0a6ea0e849f7a05ec82d296afda67e9"
+  },
+  "denied_before_ack_unlock": {
+    "expected": "DENIED",
+    "request_hash": "a55cc804c15b1c0f45de9522ca6cba2f5ed507a98d37f234cb1f1dbe07fc5793",
+    "status": 400,
+    "response": {
+      "error": "Missing required signals",
+      "missing": {
+        "provider_ack": true,
+        "user_unlock": true
+      }
+    },
+    "result_hash": "3fba6eba82dedb18af8eb06a34c6ac180c42522004bd1a9c9b2f2120c9c14612"
+  },
+  "provider_ack": {
+    "request_hash": "bf2c75d8bb931e159540168fc5d92f9cf2abc0c833fb705e547c487088efb6a9",
+    "status": 200,
+    "response": {
+      "h0": "7a07c59a770b4dd0a3ea08c7fd46c735b071c66da54da07a94f255582608e6e4",
+      "signal_recorded": true
+    },
+    "result_hash": "4e74a059b593bdd8d335c846fef8a4a32f0604aa182b65ba889bcd37d3a737da"
+  },
+  "user_unlock": {
+    "request_hash": "7c944223b533611d45fd4bddb6c51a19d91e95c9053c3930699c920a6f028509",
+    "status": 200,
+    "response": {
+      "h0": "7a07c59a770b4dd0a3ea08c7fd46c735b071c66da54da07a94f255582608e6e4",
+      "status": "UNLOCKED",
+      "h1": "d801c5e78c93ddd2b151c4693f97530c5fdf9e47b207a8d556e01137ab415845",
+      "proof_status": "EXECUTION_PROVEN"
+    },
+    "result_hash": "c49f420ab07269fa89c0186ddb24ea4d917d90a80f76c0459bb8bad974c622c1"
+  },
+  "allowed_after_ack_unlock": {
+    "expected": "EXECUTION_PROVEN",
+    "request_hash": "a55cc804c15b1c0f45de9522ca6cba2f5ed507a98d37f234cb1f1dbe07fc5793",
+    "status": 200,
+    "response": {
+      "h1": "d801c5e78c93ddd2b151c4693f97530c5fdf9e47b207a8d556e01137ab415845",
+      "status": "EXECUTION_PROVEN"
+    },
+    "result_hash": "19638a4ac865307ebaa0f8f0876c5aa7f0943999d6c1827aca9d86debb586420"
+  }
+}
