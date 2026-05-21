@@ -1,0 +1,13 @@
+{
+  "signals": [
+    "session_created",
+    "provider_ack",
+    "user_unlock",
+    "execution_proven",
+    "payment_attested",
+    "payment_cancelled",
+    "reject",
+    "timeout",
+    "rollback"
+  ]
+}
