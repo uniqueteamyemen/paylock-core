@@ -125,6 +125,11 @@ app.post('/v1/webhook/payment', async (req, res) => {
   if (!sessionData) return res.status(404).json({ error: 'Session not found' });
 
   const session = JSON.parse(sessionData);
+  if (session.receipt_id && session.receipt_id !== receipt_id) {
+    return res.status(409).json({
+      error: 'Commercial receipt mismatch with frozen intent.'
+    });
+  }
   if (isSessionClosed(session)) {
     return res.status(409).json({ error: 'Session is closed' });
   }
@@ -148,6 +153,11 @@ app.post('/v1/webhook/cancel', async (req, res) => {
   if (!sessionData) return res.status(404).json({ error: 'Session not found' });
 
   const session = JSON.parse(sessionData);
+  if (session.receipt_id && session.receipt_id !== receipt_id) {
+    return res.status(409).json({
+      error: 'Commercial receipt mismatch with frozen intent.'
+    });
+  }
   if (isSessionClosed(session)) {
     return res.json({ ok: true, h0, status: session.status });
   }
@@ -223,6 +233,19 @@ app.post('/v1/signal', async (req, res) => {
   if (!sessionData) return res.status(404).json({ error: 'Session not found' });
 
   const session = JSON.parse(sessionData);
+  const isDuplicate = session.signals.some(
+    s =>
+      s.type === signal_type &&
+      s.ref === signal_ref
+  );
+
+  if (isDuplicate) {
+    return res.json({
+      h0,
+      signal_recorded: true,
+      duplicate_ignored: true
+    });
+  }
   session.signals.push({ type: signal_type, ref: signal_ref, timestamp: Date.now() });
   await redis.set(`session:${h0}`, JSON.stringify(session), 'EX', 3600);
 
@@ -338,5 +361,11 @@ app.post('/v1/resolve', async (req, res) => {
 // ========== بدء الخادم ==========
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`PayLock Core (Production Ready) running on port ${PORT}`);
+  const mode = usingMemoryFallback
+    ? 'Ephemeral Evaluation Mode (RAM-only)'
+    : 'Durable Production Mode (Redis)';
+
+  console.log(
+    `PayLock Core [${mode}] running on port ${PORT}`
+  );
 });
