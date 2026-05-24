@@ -7,9 +7,9 @@
 
 **"You only pay when execution is provably complete."**
 
-PayLock Core is a lightweight, stateless protocol that guarantees a transaction outcome is deterministically matched and verified before any payment is captured. It acts as a neutral trust layer that eliminates disputes not by policy, but by mathematical certainty.
+PayLock Core is a lightweight deterministic protocol runtime that records operational signals and issues execution proof only after lifecycle completeness is established.
 
-> No payment state.  
+> No payment processing.  
 > No custody of funds.  
 > Only deterministic execution verification.
 
@@ -17,17 +17,20 @@ PayLock Core is a lightweight, stateless protocol that guarantees a transaction 
 
 ---
 
-## 🐳 Quick Start (Docker)
+## Quick Start (Docker)
 
-Run the engine locally in seconds.
+Run the engine locally with the required runtime secrets.
 
 ### Quick Demo (No Redis Required)
 
-Run PayLock Core instantly in ephemeral in-memory demo mode.
+Run PayLock Core in ephemeral in-memory demo mode.
 
 ```bash
 docker pull uniqueteamyemen/paylock-core:latest
-docker run -d -p 3000:3000 uniqueteamyemen/paylock-core:latest
+docker run -d -p 3000:3000 \
+  -e PLATFORM_SECRET=test-secret \
+  -e API_KEY=test-key \
+  uniqueteamyemen/paylock-core:latest
 ```
 
 Health check:
@@ -52,7 +55,7 @@ Example log output:
 
 ```text
 ⚠️ Redis not found. Running in ephemeral in-memory demo mode.
-PayLock Core (Production Ready) running on port 3000
+PayLock Core [Ephemeral Evaluation Mode (RAM-only)] running on port 3000
 ```
 
 ### Full Stack Mode (Redis Enabled)
@@ -62,7 +65,17 @@ Run PayLock Core with a persistent Redis backend.
 ```bash
 docker network create paylock-net
 docker run -d --name redis-paylock --network paylock-net redis
-docker run -d -p 3000:3000 --network paylock-net -e REDIS_URL=redis://redis-paylock:6379 uniqueteamyemen/paylock-core:latest
+docker run -d -p 3000:3000 \
+  --network paylock-net \
+  -e REDIS_URL=redis://redis-paylock:6379 \
+  -e PLATFORM_SECRET=test-secret \
+  -e API_KEY=test-key \
+  uniqueteamyemen/paylock-core:latest
+```
+
+Health check:
+
+```bash
 curl http://localhost:3000/v1/health
 ```
 
@@ -72,27 +85,30 @@ Expected response:
 {"status":"ok","redis":true,"service":"paylock-core"}
 ```
 
-**Notes:**
+**Notes**
 - Demo mode uses temporary in-memory storage and is intended for evaluation and local testing only.
 - Full Stack mode uses Redis persistence and reflects the recommended production-style runtime architecture.
 - Railway deployments automatically connect to Redis through the configured `REDIS_URL`.
+- `PLATFORM_SECRET` and `API_KEY` are required in all modes.
 
 ---
 
 ## How It Works
 
-1.  **Session (H0)** – A client initiates a session, creating a frozen intent. No funds are moved.
-2.  **Signal** – An external signal (e.g., a provider's acknowledgment) is appended to the session. No state change occurs yet.
-3.  **Unlock (User)** – The user explicitly breaks the lock (`user_unlock`). This is a network-confirmed event recorded as a signal.
-4.  **Resolve (H1)** – Once both required signals (`provider_ack` + `user_unlock`) are present, the engine deterministically issues a proof of execution (`H1`). This proof can be used to trigger fund capture.
+1. **Session (H0)**: A client initiates a session, creating a frozen execution intent.
+2. **Signal**: A provider-side operational signal such as `provider_ack` is attached to the session.
+3. **Unlock (User)**: The user explicitly breaks the lock with `user_unlock`.
+4. **Resolve (H1)**: Once `provider_ack` and `user_unlock` both exist, the engine deterministically issues execution proof (`H1`).
 
-**Optional (Provider-Enabled):** If a provider chooses to send payment receipts/cancellations to PayLock via webhooks, PayLock will automatically close cancelled sessions and reject any later `unlock`/`resolve` attempts for those sessions.
+If `user_unlock` arrives after `provider_ack`, PayLock may issue the proof opportunistically during `/v1/unlock`. If not, `/v1/resolve` completes the same convergence deterministically.
 
-The engine **does not handle money, identity, or business logic**. It only records signals and deterministically resolves whether execution is proven.
+**Optional (Provider-Enabled):** If a provider chooses to send payment attestation or cancellation signals to PayLock via webhooks, PayLock can record the attestation and automatically cancel later unlock or resolve attempts for the affected session.
+
+The engine does not handle money, identity, fulfillment policy, or business logic. It only records signals and resolves whether execution is proven.
 
 ---
 
-## 🧪 Live Demo
+## Live Demo
 
 Public deterministic execution demo:
 
@@ -110,7 +126,10 @@ https://paylock-core-production.up.railway.app
 
 ## Authentication
 
-All endpoints except `GET /v1/health` require `x-api-key` and server-side `API_KEY` configuration.
+All endpoints except `GET /v1/health` require:
+
+- request header `x-api-key`
+- server-side `API_KEY`
 
 **Note:** The default API key `test-key` is for demo purposes only. Change it immediately before any production use.
 
@@ -122,9 +141,10 @@ All endpoints except `GET /v1/health` require `x-api-key` and server-side `API_K
 
 `GET /v1/health`
 
-Returns the status of the service and its connection to Redis.
+Returns service status and Redis availability.
 
 **Response `200 OK`**
+
 ```json
 {
   "status": "ok",
@@ -134,6 +154,7 @@ Returns the status of the service and its connection to Redis.
 ```
 
 **Response `500 Internal Server Error`**
+
 ```json
 {
   "status": "error",
@@ -141,30 +162,40 @@ Returns the status of the service and its connection to Redis.
 }
 ```
 
----
-
 ### 2. Create Session (H0)
 
 `POST /v1/session`
 
-Creates a new deterministic session. The session starts in `INITIATED` state.
+Creates a new deterministic session in `INITIATED` state.
 
 **Request Body**
+
 ```json
 {
   "service_id": "premium-vpn",
   "device_id": "device-xyz",
-  "constraints": { "amount": 9.99 }
+  "constraints": { "amount": 9.99 },
+  "receipt_id": "order-123"
 }
 ```
 
-| Field | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `service_id` | string | **Yes** | Identifier of the service being purchased. |
-| `device_id` | string | **Yes** | Unique identifier of the customer's device. |
-| `constraints` | object | No | Any constraints (e.g., amount, duration). |
+**Required fields**
+- `service_id`
+- `device_id`
+
+**Optional fields**
+- `service_name`
+- `provider_id`
+- `provider_name`
+- `device_type`
+- `device_specs`
+- `payment_method`
+- `service_url`
+- `constraints`
+- `receipt_id`
 
 **Response `200 OK`**
+
 ```json
 {
   "h0": "f7c191ddc49ddbff11e282f1db457eb219a832d60f154d2e35513a09c8a51469",
@@ -172,20 +203,22 @@ Creates a new deterministic session. The session starts in `INITIATED` state.
 }
 ```
 
-| Field | Description |
-| :--- | :--- |
-| `h0` | Unique session identifier (SHA-256 HMAC). |
-| `status` | Initial state of the session. |
+**Response `409 Conflict`**
 
----
+```json
+{
+  "error": "Duplicate receipt_id"
+}
+```
 
 ### 3. Append Signal
 
 `POST /v1/signal`
 
-Appends an immutable signal to an existing session. **This does not change the session state.** Signals are used as inputs for the deterministic `resolve` step.
+Records an immutable signal on an existing session.
 
 **Request Body**
+
 ```json
 {
   "h0": "f7c191dd...",
@@ -194,13 +227,13 @@ Appends an immutable signal to an existing session. **This does not change the s
 }
 ```
 
-| Field | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `h0` | string | **Yes** | Session identifier. |
-| `signal_type` | string | **Yes** | Type of signal. Must be `provider_ack` for execution proof. |
-| `signal_ref` | string | **Yes** | A reference for this signal (e.g., transaction ID). |
+**Required fields**
+- `h0`
+- `signal_type`
+- `signal_ref`
 
 **Response `200 OK`**
+
 ```json
 {
   "h0": "f7c191dd...",
@@ -208,32 +241,70 @@ Appends an immutable signal to an existing session. **This does not change the s
 }
 ```
 
-**Error Responses**
-- `400 Bad Request` – Missing required fields.
-- `404 Not Found` – Session does not exist.
+Duplicate replays with the same `signal_type` and `signal_ref` are accepted and returned as:
 
----
+```json
+{
+  "h0": "f7c191dd...",
+  "signal_recorded": true,
+  "duplicate_ignored": true
+}
+```
 
-### 4. Resolve & Issue Proof (H1)
+### 4. Unlock
+
+`POST /v1/unlock`
+
+Records `user_unlock`. If `provider_ack` already exists, PayLock may issue `H1` immediately.
+
+**Request Body**
+
+```json
+{
+  "h0": "f7c191dd...",
+  "device_fingerprint": "fp-device-001"
+}
+```
+
+**Required fields**
+- `h0`
+
+**Response `200 OK`**
+
+```json
+{
+  "h0": "f7c191dd...",
+  "status": "UNLOCKED"
+}
+```
+
+**Response `200 OK` when proof is issued opportunistically**
+
+```json
+{
+  "h0": "f7c191dd...",
+  "status": "UNLOCKED",
+  "h1": "78950cbaa46394d6df55efbd3123ab955e56def6a346a66029cbe5c6a3cb0647",
+  "proof_status": "EXECUTION_PROVEN"
+}
+```
+
+### 5. Resolve & Issue Proof (H1)
 
 `POST /v1/resolve`
 
-Deterministically resolves whether the session can be proven as executed. If both signals `provider_ack` and `user_unlock` exist, the engine generates the final execution proof (`H1`) and transitions the session to `EXECUTION_PROVEN`.
-
-**This endpoint is idempotent.** Calling it multiple times with the same `h0` will always return the same `H1`.
+Deterministically resolves whether execution is proven. This endpoint is idempotent: once `H1` exists for `h0`, repeated calls return the same proof.
 
 **Request Body**
+
 ```json
 {
   "h0": "f7c191dd..."
 }
 ```
 
-| Field | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `h0` | string | **Yes** | Session identifier. |
-
 **Response `200 OK`**
+
 ```json
 {
   "h1": "78950cbaa46394d6df55efbd3123ab955e56def6a346a66029cbe5c6a3cb0647",
@@ -241,65 +312,112 @@ Deterministically resolves whether the session can be proven as executed. If bot
 }
 ```
 
-**Error Responses**
-- `400 Bad Request` – `h0` missing, or no `provider_ack` signal found.
-- `404 Not Found` – Session does not exist.
+**Response `400 Bad Request`**
+
+```json
+{
+  "error": "Missing required signals",
+  "missing": {
+    "provider_ack": false,
+    "user_unlock": true
+  }
+}
+```
+
+### 6. Optional Provider Webhooks
+
+`POST /v1/webhook/payment`
+
+Attaches provider-supplied attestation data to an existing session.
+
+**Request Body**
+
+```json
+{
+  "h0": "f7c191dd...",
+  "receipt_id": "order-123"
+}
+```
+
+`POST /v1/webhook/cancel`
+
+Cancels a session and prevents later unlock or resolve success.
+
+**Request Body**
+
+```json
+{
+  "h0": "f7c191dd...",
+  "receipt_id": "order-123",
+  "reason": "payment reversed"
+}
+```
 
 ---
 
 ## Complete Example (cURL)
 
-A full lifecycle from session creation to execution proof.
-
 ```bash
+BASE=https://paylock-core-production.up.railway.app
+KEY=test-key
+
 # 1. Create session
-H0=$(curl -s -X POST https://paylock-core-production.up.railway.app/v1/session \
+H0=$(curl -s -X POST "$BASE/v1/session" \
   -H "Content-Type: application/json" \
+  -H "x-api-key: $KEY" \
   -d '{"service_id":"test","device_id":"device123"}' | jq -r '.h0')
 
 echo "H0: $H0"
 
 # 2. Append provider acknowledgment signal
-curl -X POST https://paylock-core-production.up.railway.app/v1/signal \
+curl -X POST "$BASE/v1/signal" \
   -H "Content-Type: application/json" \
+  -H "x-api-key: $KEY" \
   -d "{\"h0\":\"$H0\",\"signal_type\":\"provider_ack\",\"signal_ref\":\"ack123\"}"
 
-# 3. Resolve and get H1
-curl -X POST https://paylock-core-production.up.railway.app/v1/resolve \
+# 3. Record user unlock
+curl -X POST "$BASE/v1/unlock" \
   -H "Content-Type: application/json" \
+  -H "x-api-key: $KEY" \
+  -d "{\"h0\":\"$H0\",\"device_fingerprint\":\"fp-device123\"}"
+
+# 4. Resolve and get H1
+curl -X POST "$BASE/v1/resolve" \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: $KEY" \
   -d "{\"h0\":\"$H0\"}"
 ```
 
 ---
 
-## State Machine
+## Runtime Model
 
-```
-INITIATED ──(signal: provider_ack)──> EXECUTION_PROVEN (H1 issued)
-```
+- Session starts in `INITIATED`.
+- `provider_ack` and `user_unlock` are recorded as signals.
+- Proof completion returns `EXECUTION_PROVEN`.
+- Provider-enabled cancellation can move a session to `CANCELLED`.
 
-- **INITIATED**: Session created, waiting for signals.
-- **EXECUTION_PROVEN**: Required signal received, deterministic proof (`H1`) generated.
-
-No other states. No payment state.
+Response statuses may include `UNLOCKED` during the unlock step, while final proof convergence is represented by `EXECUTION_PROVEN`.
 
 ---
 
 ## Idempotency & Replay Protection
 
-- `POST /v1/resolve` is fully idempotent. Once an `H1` is generated, subsequent calls return the same `H1`.
-- For stronger replay protection, include an `idempotency-key` header in requests. The engine caches responses for 5 minutes.
+- `POST /v1/resolve` is proof-idempotent. Once `H1` exists, repeated calls return the same `H1`.
+- Request replay caching is available through the `idempotency-key` header.
+- The replay cache key is derived from `idempotency-key + request path + request body hash`.
+- Cached responses preserve both response body and HTTP status code.
 
 ---
 
-## 🔗 Links
+## Links
 
 - GitHub: https://github.com/uniqueteamyemen/paylock-core
 - Live Demo (Yaqeen Platform): https://yaqeen-platform-production.up.railway.app/demo.html
 - Railway API: https://paylock-core-production.up.railway.app
 - Checkly Status Page: https://qpm5p92k.checkly-status-page.com/
 - LinkedIn Announcement: https://www.linkedin.com/posts/abobker-awadh-4a69bb72_fintech-trustinfrastructure-deterministicsystems-share-7456464135115948033-QIml
-  
-## 📄 License
+
+## License
 
 MIT License © 2026 Dr. Abobker Ahmed Awadh

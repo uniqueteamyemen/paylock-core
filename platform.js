@@ -69,12 +69,29 @@ async function idempotency(req, res, next) {
 
   const cached = await redis.get(cacheKey);
   if (cached) {
-    return res.json(JSON.parse(cached));
+    const parsed = JSON.parse(cached);
+    if (
+      parsed &&
+      typeof parsed === 'object' &&
+      Object.prototype.hasOwnProperty.call(parsed, 'status') &&
+      Object.prototype.hasOwnProperty.call(parsed, 'body')
+    ) {
+      return res.status(parsed.status).json(parsed.body);
+    }
+    return res.json(parsed);
   }
 
   const originalSend = res.json.bind(res);
   res.json = async (body) => {
-    await redis.set(cacheKey, JSON.stringify(body), 'EX', 300);
+    await redis.set(
+      cacheKey,
+      JSON.stringify({
+        status: res.statusCode,
+        body
+      }),
+      'EX',
+      300
+    );
     return originalSend(body);
   };
   next();
