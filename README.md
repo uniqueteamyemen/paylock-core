@@ -108,6 +108,28 @@ The engine does not handle money, identity, fulfillment policy, or business logi
 
 ---
 
+## Real-World Flow
+
+PayLock is designed for digital service delivery where a provider must verify that the requested service matches the user's device, region, and eligibility before execution is considered complete.
+
+1. The user submits the requested service, selected provider, service URL, device details, and geographic region.
+2. PayLock creates `H0`, a frozen execution intent for that request.
+3. The request can be passed through an adapter or translator layer to send the provider only the operational data required for review.
+4. The provider checks service availability, device compatibility, geographic or political restrictions, network constraints, fulfillment readiness, and payment validity.
+5. If the provider approves, the provider immediately delivers the service behind the lock and PayLock records `provider_ack`.
+6. When the user opens the locked link, PayLock records `user_unlock` with the user's device fingerprint.
+7. When `provider_ack` and `user_unlock` both exist, PayLock issues `H1` as deterministic proof that execution was completed.
+
+---
+
+## Why This Matters
+
+This flow reduces post-sale support because the service is approved and released against the exact data supplied by the user. It also limits multi-device abuse by binding unlock evidence to the user's device fingerprint, and it strengthens defense against friendly fraud and chargebacks because the provider approval and user unlock are both recorded before `H1` is issued.
+
+PayLock also reduces race-condition risk at the two critical points of the lifecycle: session creation (`H0`) and final unlock/proof issuance (`H1`).
+
+---
+
 ## Live Demo
 
 Public deterministic execution demo:
