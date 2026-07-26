@@ -6,11 +6,11 @@ import { AlertEscalationBuilder, RetryStrategyBuilder } from 'checkly/constructs
  */
 const config = defineConfig({
   /* A human friendly name for your project */
-  projectName: 'Advanced Example Project',
+  projectName: 'PayLock Monitoring',
   /** A logical ID that needs to be unique across your Checkly account,
    * See https://www.checklyhq.com/docs/cli/constructs/ to learn more about logical IDs.
    */
-  logicalId: 'advanced-example-project',
+  logicalId: 'paylock-monitoring',
   /* An optional URL to your Git repo to be shown in your test sessions and resource activity log */
   /* repoUrl: 'https://github.com/checkly/checkly-cli', */
   /* Sets default values for Checks */
@@ -20,7 +20,7 @@ const config = defineConfig({
     /* Checkly data centers to run your Checks as monitors */
     locations: ['us-east-1', 'eu-central-1'],
     /* An optional array of tags to organize your Checks */
-    tags: ['mac'],
+    tags: ['paylock'],
     /** The Checkly Runtime identifier, determining npm packages and the Node.js version available at runtime.
      * See https://www.checklyhq.com/docs/cli/npm-packages/
      */
@@ -31,31 +31,6 @@ const config = defineConfig({
     alertEscalationPolicy: AlertEscalationBuilder.runBasedEscalation(1),
     /* A glob pattern that matches the Checks inside your repo, see https://www.checklyhq.com/docs/constructs/including-checks/#checks-checkmatch */
     checkMatch: '**/__checks__/**/*.check.ts',
-    /* Global configuration option for Browser and Multistep checks. See https://www.checklyhq.com/docs/browser-checks/playwright-test/#global-configuration */
-    playwrightConfig: {
-      timeout: 30000,
-      use: {
-        baseURL: 'https://www.danube-web.shop',
-        viewport: { width: 1280, height: 720 },
-      },
-    },
-    browserChecks: {
-      /* A glob pattern matches any Playwright .spec.ts files and automagically creates a Browser Check. This way, you
-       * can just write Playwright code. See https://www.checklyhq.com/docs/constructs/including-checks/#browserchecks-testmatch
-       * */
-      testMatch: '**/__checks__/**/*.spec.ts',
-      /* Failed check runs will be retried before triggering alerts */
-      retryStrategy: RetryStrategyBuilder.fixedStrategy({ baseBackoffSeconds: 60, maxRetries: 4, sameRegion: true }),
-    },
-    // Playwright Check Suites definition, run the whole Playwright Test Suite in a Check
-    playwrightConfigPath: './playwright.config.ts',
-    playwrightChecks: [
-      {
-        logicalId: 'playwright-check-suite',
-        name: 'Playwright Check Suite TS',
-        //Use `testCommand: npx playwright test` to filter the tests you want to run
-      }
-    ],
   },
   cli: {
     /* The default datacenter location to use when running npx checkly test */
