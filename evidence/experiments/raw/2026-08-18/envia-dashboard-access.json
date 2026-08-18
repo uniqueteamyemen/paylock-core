@@ -1,0 +1,21 @@
+{
+  "record_type": "redacted-access-observation",
+  "record_date": "2026-08-18",
+  "provider": "Envia",
+  "interaction_scope": "Owner-completed interactive login followed by read-only dashboard inspection",
+  "observed_destination": "https://shipping.envia.com/home",
+  "observed": [
+    "An owner-authenticated Envia dashboard route was reached.",
+    "No shipment, label, pickup, payment action, webhook configuration, or API request was created by the evidence capture."
+  ],
+  "not_established": [
+    "Whether the authenticated context is a provider-designated Sandbox environment.",
+    "Availability of an Envia Sandbox API credential.",
+    "Availability or configuration of an Envia webhook signing secret.",
+    "Receipt, signature validation, or replay handling of a provider-originated webhook by PayLock or Yaqeen."
+  ],
+  "redactions": [
+    "No account email, account identifier, token, password, session cookie, request header, or provider-private dashboard data is retained."
+  ],
+  "evidence_status": "ACCESS_OBSERVED_NOT_INTEGRATION_EXECUTED"
+}
