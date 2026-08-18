@@ -2,7 +2,10 @@
   "schema": "paylock-experiment-evidence-manifest/v1",
   "created_date": "2026-08-18",
   "branch_intent": "isolated experiments-and-logs evidence only",
-  "provider": "Envia",
+  "providers": {
+    "envia": "ACCESS_OBSERVED_SANDBOX_UNCONFIRMED_NOT_INTEGRATION_EXECUTED",
+    "paddle": "DOCUMENTED_FREE_SANDBOX_CANDIDATE_PROTOCOL_NOT_EXECUTED"
+  },
   "test_environment": "NOT_ESTABLISHED",
   "execution_status": "NO_PROVIDER_API_OR_WEBHOOK_TEST_EXECUTED",
   "redaction_policy": "No credential, token, password, cookie, account identifier, customer data, production payload, or private provider content may be committed.",
@@ -14,8 +17,8 @@
     },
     {
       "path": "test-matrix.md",
-      "classification": "test definition",
-      "execution_status": "NOT_EXECUTED"
+      "classification": "provider-neutral test definition with proposed Paddle Sandbox cases",
+      "execution_status": "NOT_EXECUTED; NO_PROVIDER_API_OR_WEBHOOK_TEST_EXECUTED"
     },
     {
       "path": "reports/2026-08-18-envia-sandbox-readiness.md",

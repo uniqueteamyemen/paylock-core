@@ -13,6 +13,18 @@ The cases below may run only when all of the following are confirmed: the provid
 | Disposable, approved webhook receiver | Not configured | Endpoint ownership and retention policy |
 | PayLock adapter mapping for provider events | Not implemented/proven | Named mapping definition and review |
 
+## Recommended free provider path: Paddle Sandbox
+
+The recommended replacement for the blocked/uncertain provider path is **Paddle Sandbox**. It is selected only as a test-event source because the official documentation describes a separate Sandbox account, data set, credentials, API base, signed webhook header, retry behavior, delivery logs, replay, and a webhook simulator. This is not a payment-processing claim for PayLock and does not authorize a live Paddle account or a customer-facing checkout. [3] [4] [5]
+
+| Additional precondition | Required evidence before execution |
+|---|---|
+| Explicit Paddle Sandbox account and `*_sdbx` key | Redacted account-environment observation and scoped test credential through the approved secret path |
+| Test notification destination | Disposable receiver URL with a documented retention/deletion policy |
+| Paddle notification-destination secret | Secure secret provision; raw-body signature verification record |
+| Named Paddle-to-Dictionary mapping | Reviewed mapping for the exact event types under test; no generic Adapter claim |
+| Allowed test set | A declared list of simulator/test events; no live checkout, customer, payment, or production data |
+
 ## Test cases
 
 Every executed row must include a redacted request/response trace, a UTC time, an SHA-256 entry in the manifest, and an explicit result. A missing trace means `NOT_EXECUTED`, not pass.
@@ -29,6 +41,19 @@ Every executed row must include a redacted request/response trace, a UTC time, a
 | ENV-PL-008 | Retry after transient receiver failure | Record retry behavior; no uncontrolled duplicate transition. | NOT_EXECUTED — receiver and provider retry configuration gates open |
 | ENV-PL-009 | Compare provider event to retained PayLock evidence | Store a redacted correlation reference without retaining provider-private payloads. | NOT_EXECUTED — all integration gates open |
 
+## Paddle Sandbox cases
+
+| ID | Scenario | Expected PayLock/Yaqeen boundary | Initial status |
+|---|---|---|---|
+| PDL-PL-001 | Generate one declared Paddle Sandbox lifecycle event through the provider simulator | No canonical signal is accepted until the event passes raw-body signature verification and the reviewed mapping. | NOT_EXECUTED — Sandbox, receiver, signature, and mapping gates open |
+| PDL-PL-002 | Deliver an authentic `Paddle-Signature` event | Verify origin and freshness before mapping a named event to a canonical signal. | NOT_EXECUTED — receiver, secret, and mapping gates open |
+| PDL-PL-003 | Submit altered payload or invalid signature | Reject without changing the last valid state or creating a proof. | NOT_EXECUTED — receiver and signature gates open |
+| PDL-PL-004 | Replay a retained valid event | Deduplicate by documented provider event identity; no duplicate canonical transition or proof. | NOT_EXECUTED — receiver and mapping gates open |
+| PDL-PL-005 | Deliver provider events out of generation order | Do not infer a final valid state from arrival order; preserve correlation and rejection/deferral evidence. | NOT_EXECUTED — receiver and mapping gates open |
+| PDL-PL-006 | Force a non-2xx receiver response and observe provider retry | Preserve every delivery attempt; no uncontrolled repeated transition after retry. | NOT_EXECUTED — receiver and provider-retry gates open |
+| PDL-PL-007 | Use simulator replay after a recorded rejection | Retain the original failed evidence and record whether replay remains blocked or succeeds only after corrected conditions. | NOT_EXECUTED — simulator, receiver, and mapping gates open |
+| PDL-PL-008 | Pair a valid mapped acknowledgement with a valid user unlock | Allow exactly one Core resolution proof only if the named contract conditions are satisfied. | NOT_EXECUTED — adapter/Core test credential gates open |
+
 ## Mandatory failure evidence
 
 For every rejection, invalid signature, duplicate, out-of-order event, provider cancellation, or receiver failure, retain the redacted input classification, the state before/after, the rejection reason, and the manifest hash. Failed evidence must never be removed merely because a later attempt succeeds.
@@ -41,3 +66,6 @@ This matrix validates only a specifically named integration path once built and 
 
 1. [Envia webhooks documentation](https://docs.envia.com/docs/webhooks)
 2. [PayLock readiness assessment, private review record](../../../../paylock-audit-notes/paylock-yaqeen-readiness-assessment-2026-08-18.md)
+3. [Paddle Sandbox documentation](https://developer.paddle.com/sdks/sandbox)
+4. [Paddle webhook signature verification](https://developer.paddle.com/webhooks/about/signature-verification)
+5. [Paddle webhook response, retries, replay, and simulator guidance](https://developer.paddle.com/webhooks/about/respond-to-webhooks)
