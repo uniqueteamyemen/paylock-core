@@ -44,3 +44,7 @@ Each completed row must record a precise source path, a relevant function/route 
 ## Phase 2 finding: invariant proof versus integration semantics
 
 **H0 and H1 remain strong reviewed Core invariants.** The material issue is not their derivation or single-winner storage; it is the semantic source of the current provider-side signal and the unimplemented Adapter boundary around it. `platform.js` currently contains payment receipt inputs and optional payment webhooks, and the reviewed mapping artefact maps payment events. This must be treated as a launch-copy and integration-layer remediation question, not as a defect in the H0/H1 proof construction.
+
+## External receiver verification (bounded)
+
+On 2026-08-18, the configured GitHub repository webhook was verified through its signed `ping` and one owner-authorized redelivery. GitHub reported HTTP `202` on both records and showed the endpoint configured with JSON content, TLS verification, an obscured secret, and the `release` event only. The receiver source verifies the SHA-256 HMAC before it returns the non-release `event_not_in_test_scope` disposition. This supports endpoint reachability and the shared-secret signing path only; it does not execute, infer, or establish a `release.published` provider-ready candidate, an Adapter mapping, or a PayLock Core transition.

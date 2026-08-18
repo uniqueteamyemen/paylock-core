@@ -5,12 +5,12 @@
   "providers": {
     "envia": "ACCESS_OBSERVED_SANDBOX_UNCONFIRMED_NOT_INTEGRATION_EXECUTED",
     "paddle": "DOCUMENTED_FREE_SANDBOX_CANDIDATE_PROTOCOL_NOT_EXECUTED",
-    "github": "LOCAL_SIGNED_RECEIVER_TESTED_EXTERNAL_DELIVERY_NOT_EXECUTED",
+    "github": "SIGNED_EXTERNAL_PING_AND_ONE_REDELIVERY_ACCEPTED_RELEASE_EVENT_NOT_EXECUTED",
     "shopify": "DOCUMENTED_DEVELOPMENT_STORE_FULFILMENT_PROTOCOL_NOT_EXECUTED",
     "gemini": "BACKGROUND_REQUEST_ACCEPTED_SIGNED_COMPLETION_CALLBACK_BLOCKED_OR_UNCONFIRMED"
   },
   "test_environment": "NOT_ESTABLISHED",
-  "execution_status": "LOCAL_GITHUB_RECEIVER_TESTED; GEMINI_BACKGROUND_REQUEST_ACCEPTED; NO_EXTERNAL_SIGNED_CALLBACK_OR_FINAL_PROVIDER_DELIVERY_EVIDENCE",
+  "execution_status": "GITHUB_SIGNED_PING_AND_ONE_REDELIVERY_ACCEPTED; GEMINI_BACKGROUND_REQUEST_ACCEPTED; NO_RELEASE_EVENT_OR_GOOGLE_SIGNED_COMPLETION_CALLBACK_EVIDENCE",
   "redaction_policy": "No credential, token, password, cookie, account identifier, customer data, production payload, or private provider content may be committed.",
   "artifacts": [
     {
@@ -36,7 +36,12 @@
     {
       "path": "reports/2026-08-18-launch-source-verification-matrix.md",
       "classification": "source-backed launch verification matrix",
-      "execution_status": "SOURCE_REVIEW_COMPLETED; NOT_A_PROVIDER_INTEGRATION_EXECUTION_RECORD"
+      "execution_status": "SOURCE_REVIEW_COMPLETED; SIGNED_GITHUB_PING_CONNECTIVITY_RECORDED; NOT_A_RELEASE_EVENT_EXECUTION_RECORD"
+    },
+    {
+      "path": "reports/2026-08-18-github-webhook-ping-verification.md",
+      "classification": "redacted external signed-connectivity verification",
+      "execution_status": "PING_AND_ONE_OWNER_AUTHORIZED_REDELIVERY_ACCEPTED; NO_RELEASE_EVENT_EXECUTED"
     }
   ],
   "sha256_inventory": "sha256sums.txt"
