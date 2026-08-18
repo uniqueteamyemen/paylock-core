@@ -7,7 +7,8 @@ An owner-authenticated Envia dashboard was reached. This establishes interactive
 | Evidence question | Result | Evidence status |
 |---|---|---|
 | Was an owner-authenticated Envia dashboard route reached? | Yes, `https://shipping.envia.com/home` was observed after interactive login. | Observed, redacted record retained. |
-| Was a provider-designated Sandbox mode confirmed? | No. | Not established. |
+| Was a provider-designated Sandbox mode confirmed? | No. The read-only dashboard inspection showed no Sandbox indicator. | Not established; do not infer a test environment from dashboard access. |
+| Was the account ready for operational use? | Not established. The dashboard showed an incomplete account-verification step; no verification or billing action was taken. | Read-only observation only. |
 | Was a shipment or label created? | No. | Not attempted. |
 | Was an API call made? | No. | Not attempted. |
 | Was a webhook configured or received? | No. | Not attempted. |
@@ -15,7 +16,7 @@ An owner-authenticated Envia dashboard was reached. This establishes interactive
 
 ## Interpretation
 
-The access observation is a useful readiness signal, but it is not an integration result. It does not change the current launch boundary: PayLock can be discussed as an independent execution-governance and proof layer, and Yaqeen as an optional reference surface; neither may be represented as having verified Envia provider attestation, webhook-origin validation, or general multi-tenant onboarding.
+The access observation is a useful readiness signal, but it is not an integration result. The absence of a visible Sandbox indicator and the incomplete account-verification step mean that creating a shipment, label, payment action, or webhook at this point could be a production or account-activation action; none was attempted. This does not change the current launch boundary: PayLock can be discussed as an independent execution-governance and proof layer, and Yaqeen as an optional reference surface; neither may be represented as having verified Envia provider attestation, webhook-origin validation, or general multi-tenant onboarding.
 
 ## Next gate
 

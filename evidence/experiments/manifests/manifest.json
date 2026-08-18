@@ -10,7 +10,7 @@
     {
       "path": "raw/2026-08-18/envia-dashboard-access.json",
       "classification": "redacted access observation",
-      "execution_status": "ACCESS_OBSERVED_NOT_INTEGRATION_EXECUTED"
+      "execution_status": "ACCESS_OBSERVED_SANDBOX_UNCONFIRMED_NOT_INTEGRATION_EXECUTED"
     },
     {
       "path": "test-matrix.md",

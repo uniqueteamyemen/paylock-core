@@ -6,6 +6,8 @@
   "observed_destination": "https://shipping.envia.com/home",
   "observed": [
     "An owner-authenticated Envia dashboard route was reached.",
+    "The dashboard did not display a provider-designated Sandbox indicator during the read-only inspection.",
+    "The dashboard presented an account-verification step as incomplete; no verification action was taken.",
     "No shipment, label, pickup, payment action, webhook configuration, or API request was created by the evidence capture."
   ],
   "not_established": [
@@ -17,5 +19,5 @@
   "redactions": [
     "No account email, account identifier, token, password, session cookie, request header, or provider-private dashboard data is retained."
   ],
-  "evidence_status": "ACCESS_OBSERVED_NOT_INTEGRATION_EXECUTED"
+  "evidence_status": "ACCESS_OBSERVED_SANDBOX_UNCONFIRMED_NOT_INTEGRATION_EXECUTED"
 }
