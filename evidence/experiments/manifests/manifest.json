@@ -4,10 +4,13 @@
   "branch_intent": "isolated experiments-and-logs evidence only",
   "providers": {
     "envia": "ACCESS_OBSERVED_SANDBOX_UNCONFIRMED_NOT_INTEGRATION_EXECUTED",
-    "paddle": "DOCUMENTED_FREE_SANDBOX_CANDIDATE_PROTOCOL_NOT_EXECUTED"
+    "paddle": "DOCUMENTED_FREE_SANDBOX_CANDIDATE_PROTOCOL_NOT_EXECUTED",
+    "github": "LOCAL_SIGNED_RECEIVER_TESTED_EXTERNAL_DELIVERY_NOT_EXECUTED",
+    "shopify": "DOCUMENTED_DEVELOPMENT_STORE_FULFILMENT_PROTOCOL_NOT_EXECUTED",
+    "gemini": "DOCUMENTED_DIGITAL_SERVICE_COMPLETION_PROTOCOL_NOT_EXECUTED_REAL_PROVIDER_KEY_REQUIRED"
   },
   "test_environment": "NOT_ESTABLISHED",
-  "execution_status": "NO_PROVIDER_API_OR_WEBHOOK_TEST_EXECUTED",
+  "execution_status": "LOCAL_GITHUB_RECEIVER_TESTED_NO_PROVIDER_OR_EXTERNAL_WEBHOOK_DELIVERY_EXECUTED",
   "redaction_policy": "No credential, token, password, cookie, account identifier, customer data, production payload, or private provider content may be committed.",
   "artifacts": [
     {
@@ -17,8 +20,8 @@
     },
     {
       "path": "test-matrix.md",
-      "classification": "provider-neutral test definition with proposed Paddle Sandbox cases",
-      "execution_status": "NOT_EXECUTED; NO_PROVIDER_API_OR_WEBHOOK_TEST_EXECUTED"
+      "classification": "provider-neutral test definition with Envia, Paddle, GitHub, Shopify, and Gemini cases",
+      "execution_status": "GITHUB_LOCAL_RECEIVER_CASES_VERIFIED; ALL_EXTERNAL_PROVIDER_CASES_NOT_EXECUTED"
     },
     {
       "path": "reports/2026-08-18-envia-sandbox-readiness.md",

@@ -15,6 +15,10 @@ The evidence branch does not authorize a production change, public claim, provid
 | `test-matrix.md` | Explicit lifecycle, negative, retry, and authenticity cases for a future authorized Sandbox run. |
 | `manifests/` | Reproducibility metadata and SHA-256 inventory. |
 
+## Added external-event routes
+
+The matrix now contains three additional, evidence-bounded routes. GitHub may provide a no-cost signed **artifact-ready** signal. Shopify may later provide a development-store-only fulfilment-ready signal. Gemini may later provide an authoritative asynchronous digital-service-completion signal, but only with a genuine Google-issued test credential. These routes remain distinct: no result is treated as a payment, entitlement, or broad production claim.
+
 ## Current conclusion
 
 The owner-side Envia dashboard was reached after interactive login. That alone does **not** prove the active account context is Sandbox, that an API credential is available, that a webhook endpoint exists, or that provider-originated events reach PayLock. No shipment, label, webhook configuration, or API request was created during this evidence-capture session.

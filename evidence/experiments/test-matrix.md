@@ -54,13 +54,47 @@ Every executed row must include a redacted request/response trace, a UTC time, a
 | PDL-PL-007 | Use simulator replay after a recorded rejection | Retain the original failed evidence and record whether replay remains blocked or succeeds only after corrected conditions. | NOT_EXECUTED — simulator, receiver, and mapping gates open |
 | PDL-PL-008 | Pair a valid mapped acknowledgement with a valid user unlock | Allow exactly one Core resolution proof only if the named contract conditions are satisfied. | NOT_EXECUTED — adapter/Core test credential gates open |
 
+## GitHub signed-release readiness cases
+
+GitHub is used here only as an external source of an **artifact-ready** declaration. A release event can establish that a named digital artifact was published by the configured repository; it does not establish a payment, customer entitlement, or a complete production Provider ACK to PayLock Core. The local receiver validates raw payload HMAC, delivery identity, and a narrow `release.published` event filter, but has no Core invocation.
+
+| ID | Scenario | Expected PayLock boundary | Initial status |
+|---|---|---|---|
+| GHB-PL-001 | Receive a valid, signed `release.published` delivery for the named test repository | Classify as a provider-declared artifact-ready signal only; record a redacted correlation reference; do not create H1 or invoke Core. | NOT_EXECUTED — external webhook creation blocked by browser-connection failure |
+| GHB-PL-002 | Submit a release payload with a mismatched HMAC | Reject before signal classification; preserve no readiness state and create no proof. | LOCAL_VERIFIED — receiver unit and HTTP-route test |
+| GHB-PL-003 | Replay an accepted delivery identifier | Acknowledge idempotently with no duplicate readiness transition or proof. | LOCAL_VERIFIED — receiver unit and HTTP-route test |
+| GHB-PL-004 | Submit an unsupported GitHub event or non-published release action | Reject as outside the reviewed readiness mapping. | LOCAL_VERIFIED — receiver unit test |
+| GHB-PL-005 | Connect a valid provider-ready signal to an explicitly reviewed H0/H1 contract harness | Permit a later, separately approved adapter/Core test only; the website receiver itself must never substitute for Core. | NOT_EXECUTED — protected-source and reviewed-mapping gate |
+
+## Shopify development-store fulfilment cases
+
+Shopify is reserved for a later merchant-platform scenario. The permitted source event must be an explicitly named **fulfilment or digital-product-ready** event from a development store using test data, not order-payment data. The exact topic and Adapter mapping remain open until reviewed against the chosen application architecture.
+
+| ID | Scenario | Expected PayLock boundary | Initial status |
+|---|---|---|---|
+| SHP-PL-001 | Create a development-store-only fulfilment scenario using test data | No PayLock action until a reviewed, signed provider-ready topic arrives. | NOT_EXECUTED — development-store and app-scope gate |
+| SHP-PL-002 | Deliver one valid raw-body HMAC-verified fulfilment-ready webhook | Translate only the named fulfilment-ready condition; preserve a redacted delivery reference. | NOT_EXECUTED — store, webhook subscription, and reviewed Adapter mapping gates |
+| SHP-PL-003 | Deliver invalid HMAC, duplicate delivery, and out-of-order events | Reject or defer without creating a proof or changing the last valid readiness state. | NOT_EXECUTED — receiver and provider setup gates |
+| SHP-PL-004 | Pair the reviewed provider-ready signal with the contract's required client unlock and any owner-approved additional gates | Allow one evidence-bound resolution only through an approved separate harness; no payment data is read or retained. | NOT_EXECUTED — reviewed contract, Adapter, and Core test-harness gates |
+
+## Gemini digital-service completion cases
+
+Gemini is reserved for a digital-service completion scenario. It may produce evidence that a requested asynchronous digital output reached a defined provider-complete state. It does not prove payment, entitlement, or universal provider compatibility. Execution requires a real, Google-issued test API key; no locally generated secret can substitute for provider authentication.
+
+| ID | Scenario | Expected PayLock boundary | Initial status |
+|---|---|---|---|
+| GEM-PL-001 | Submit a permitted non-production asynchronous Gemini request with a synthetic prompt | Retain only a redacted request correlation and await an independently verifiable completion signal. | NOT_EXECUTED — real Google-issued test API key required |
+| GEM-PL-002 | Receive or independently verify a signed/authoritative provider-complete event | Classify only the named digital-service-ready condition after authenticity review. | NOT_EXECUTED — official callback or verified completion mechanism and API key required |
+| GEM-PL-003 | Submit a stale, altered, duplicate, or unsupported completion signal | Reject or deduplicate before any readiness transition or proof. | NOT_EXECUTED — provider completion mechanism and test receiver required |
+| GEM-PL-004 | Pair the reviewed completion signal with user unlock and any owner-approved contract gates | Permit a later evidence-bound resolution only through a reviewed Adapter/Core harness; never read payment or entitlement state. | NOT_EXECUTED — reviewed mapping, protected-source test harness, and API key required |
+
 ## Mandatory failure evidence
 
 For every rejection, invalid signature, duplicate, out-of-order event, provider cancellation, or receiver failure, retain the redacted input classification, the state before/after, the rejection reason, and the manifest hash. Failed evidence must never be removed merely because a later attempt succeeds.
 
 ## Boundaries
 
-This matrix validates only a specifically named integration path once built and approved. It does not show that Dictionary/Adapter is a universal production translation engine, that Envia attests every commercial outcome, that PayLock processes payment, or that Yaqeen has become a required PayLock dependency.
+This matrix validates only a specifically named integration path once built and approved. It does not show that Dictionary/Adapter is a universal production translation engine, that any provider attests every commercial outcome, that PayLock processes, inspects, verifies, or controls payment or entitlement state, or that Yaqeen has become a required PayLock dependency.
 
 ## References
 
@@ -69,3 +103,7 @@ This matrix validates only a specifically named integration path once built and 
 3. [Paddle Sandbox documentation](https://developer.paddle.com/sdks/sandbox)
 4. [Paddle webhook signature verification](https://developer.paddle.com/webhooks/about/signature-verification)
 5. [Paddle webhook response, retries, replay, and simulator guidance](https://developer.paddle.com/webhooks/about/respond-to-webhooks)
+6. [GitHub webhook signature validation](https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries)
+7. [Shopify webhook delivery verification](https://shopify.dev/docs/apps/build/webhooks/verify-deliveries)
+8. [Shopify development stores](https://help.shopify.com/en/partners/dashboard/managing-stores/development-stores)
+9. [Gemini API webhooks](https://ai.google.dev/gemini-api/docs/webhooks)
