@@ -10,6 +10,15 @@ function sha256(input) {
   return crypto.createHash("sha256").update(input).digest("hex")
 }
 
+const targetDevice = {
+  device_type: "desktop",
+  device_specs: { cpu: "audit-cpu", gpu: "audit-gpu", ram_gb: 16 },
+}
+const targetProfileHash = sha256(JSON.stringify({
+  device_specs: { cpu: "audit-cpu", gpu: "audit-gpu", ram_gb: 16 },
+  device_type: "desktop",
+}))
+
 async function postJson(route, body) {
   const res = await fetch(`${BASE_URL}${route}`, {
     method: "POST",
@@ -42,6 +51,7 @@ async function run() {
   const sessionReq = {
     service_id: "medusa_fulfillment",
     device_id: "audit-device-1",
+    ...targetDevice,
     receipt_id: receiptId,
   }
   const session = await postJson("/v1/session", sessionReq)
@@ -61,10 +71,17 @@ async function run() {
   }
   const ack = await postJson("/v1/signal", ackReq)
 
-  const unlockReq = {
+  const verificationReq = {
     h0,
     device_fingerprint: "audit-fp-1",
+    target_profile_hash: targetProfileHash,
+    actual_profile_hash: targetProfileHash,
+    verification_ref: `audit-verification-${Date.now()}`,
+    decision: "ACCEPT",
   }
+  const verification = await postJson("/v1/device-verification", verificationReq)
+
+  const unlockReq = { h0 }
   const unlock = await postJson("/v1/unlock", unlockReq)
 
   const allowedResolveReq = { h0 }
@@ -100,6 +117,12 @@ async function run() {
       status: unlock.status,
       response: unlock.bodyJson || unlock.bodyText,
       result_hash: sha256(unlock.bodyText),
+    },
+    device_verification: {
+      request_hash: verification.payloadHash,
+      status: verification.status,
+      response: verification.bodyJson || verification.bodyText,
+      result_hash: sha256(verification.bodyText),
     },
     allowed_after_ack_unlock: {
       expected: "EXECUTION_PROVEN",

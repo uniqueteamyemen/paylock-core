@@ -4,7 +4,8 @@
   "description": "Deterministic Payment Execution Engine",
   "main": "platform.js",
   "scripts": {
-    "start": "node platform.js"
+    "start": "node platform.js",
+    "test": "node --test test/platform.test.js"
   },
   "dependencies": {
     "express": "^4.18.2",

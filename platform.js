@@ -116,6 +116,36 @@ function requireFields(obj, fields) {
   return true;
 }
 
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function canonicalizeDeviceValue(value) {
+  if (Array.isArray(value)) return value.map(canonicalizeDeviceValue);
+  if (isPlainObject(value)) {
+    return Object.keys(value).sort().reduce((result, key) => {
+      result[key] = canonicalizeDeviceValue(value[key]);
+      return result;
+    }, {});
+  }
+  return value;
+}
+
+function getTargetDeviceProfile(device_type, device_specs) {
+  if (typeof device_type !== 'string' || !device_type || !isPlainObject(device_specs)) return null;
+  return { device_type, device_specs };
+}
+
+function hashDeviceProfile(profile) {
+  if (!profile) return null;
+  const canonical = JSON.stringify(canonicalizeDeviceValue(profile));
+  return crypto.createHash('sha256').update(canonical).digest('hex');
+}
+
+function isValidUserUnlock(signal) {
+  return signal && signal.type === 'user_unlock' && signal.device_match === true;
+}
+
 function isSessionClosed(session) {
   return session && (session.status === 'CANCELLED' || session.status === 'CLOSED');
 }
@@ -192,8 +222,8 @@ app.post('/v1/webhook/cancel', async (req, res) => {
 
 // ========== نقطة النهاية 2: إنشاء جلسة (H0) ==========
 app.post('/v1/session', async (req, res) => {
-  if (!requireFields(req.body, ['service_id', 'device_id'])) {
-    return res.status(400).json({ error: 'Missing required fields: service_id, device_id' });
+  if (!requireFields(req.body, ['service_id', 'device_id', 'device_type', 'device_specs'])) {
+    return res.status(400).json({ error: 'Missing required fields: service_id, device_id, device_type, device_specs' });
   }
 
   const {
@@ -201,6 +231,12 @@ app.post('/v1/session', async (req, res) => {
     device_id, device_type, device_specs,
     payment_method, service_url, constraints, receipt_id
   } = req.body;
+
+  const targetProfile = getTargetDeviceProfile(device_type, device_specs);
+  if (!targetProfile) {
+    return res.status(400).json({ error: 'device_type must be a non-empty string and device_specs must be an object' });
+  }
+  const targetProfileHash = hashDeviceProfile(targetProfile);
 
   // Commercial uniqueness: prevent replaying the same commercial transaction.
   // Note: this does NOT prevent repeat purchases/consumption for the same service_id.
@@ -216,6 +252,7 @@ app.post('/v1/session', async (req, res) => {
     service_id, service_name: service_name || null,
     provider_id: provider_id || null, provider_name: provider_name || null,
     device_id, device_type: device_type || null, device_specs: device_specs || null,
+    target_profile_hash: targetProfileHash,
     payment_method: payment_method || null, service_url: service_url || null,
     constraints: constraints || {}
   };
@@ -230,6 +267,7 @@ app.post('/v1/session', async (req, res) => {
 
   const session = {
     h0, status: 'INITIATED', payload, device_id,
+    target_profile_hash: targetProfileHash,
     receipt_id: receipt_id || null, created_at: Date.now(), signals: [], session_serial: sessionSerial
   };
 
@@ -246,6 +284,9 @@ app.post('/v1/signal', async (req, res) => {
   }
 
   const { h0, signal_type, signal_ref } = req.body;
+  if (signal_type === 'user_unlock') {
+    return res.status(400).json({ error: 'user_unlock must be recorded through /v1/unlock' });
+  }
   const sessionData = await redis.get(`session:${h0}`);
   if (!sessionData) return res.status(404).json({ error: 'Session not found' });
 
@@ -271,13 +312,99 @@ app.post('/v1/signal', async (req, res) => {
   res.json({ h0, signal_recorded: true });
 });
 
-// ========== نقطة النهاية 4: فتح القفل (Unlock) ==========
+// ========== نقطة النهاية 4: التحقق من الجهاز قبل فتح القفل ==========
+app.post('/v1/device-verification', async (req, res) => {
+  if (!requireFields(req.body, [
+    'h0',
+    'device_fingerprint',
+    'target_profile_hash',
+    'actual_profile_hash',
+    'verification_ref',
+    'decision'
+  ])) {
+    return res.status(400).json({
+      error: 'Missing required fields: h0, device_fingerprint, target_profile_hash, actual_profile_hash, verification_ref, decision'
+    });
+  }
+
+  const {
+    h0,
+    device_fingerprint,
+    target_profile_hash,
+    actual_profile_hash,
+    verification_ref,
+    decision
+  } = req.body;
+  const sessionData = await redis.get(`session:${h0}`);
+  if (!sessionData) return res.status(404).json({ error: 'Session not found' });
+
+  const session = JSON.parse(sessionData);
+  if (isSessionClosed(session)) {
+    return res.status(409).json({ error: 'Session is closed', status: session.status });
+  }
+  if (!['ACCEPT', 'REJECT'].includes(decision)) {
+    return res.status(400).json({ error: 'decision must be ACCEPT or REJECT' });
+  }
+  if (typeof device_fingerprint !== 'string' || !device_fingerprint ||
+      typeof verification_ref !== 'string' || !verification_ref ||
+      typeof target_profile_hash !== 'string' || !target_profile_hash ||
+      typeof actual_profile_hash !== 'string' || !actual_profile_hash) {
+    return res.status(400).json({ error: 'Device verification fields must be non-empty strings' });
+  }
+
+  if (session.device_verification) {
+    if (session.device_verification.verification_ref === verification_ref) {
+      return res.json({
+        h0,
+        verification_recorded: true,
+        duplicate_ignored: true,
+        status: session.device_verification.status
+      });
+    }
+    return res.status(409).json({ error: 'Device verification already recorded' });
+  }
+
+  const targetHashMatches = target_profile_hash === session.target_profile_hash;
+  const actualHashMatches = actual_profile_hash === session.target_profile_hash;
+  const accepted = decision === 'ACCEPT' && targetHashMatches && actualHashMatches;
+  const status = accepted ? 'ACCEPTED' : 'REJECTED';
+
+  session.device_verification = {
+    status,
+    decision,
+    device_fingerprint,
+    target_profile_hash,
+    actual_profile_hash,
+    verification_ref,
+    target_hash_matches: targetHashMatches,
+    actual_hash_matches: actualHashMatches,
+    timestamp: Date.now()
+  };
+  await redis.set(`session:${h0}`, JSON.stringify(session), 'EX', 3600);
+  await appendLog({
+    type: 'DEVICE_VERIFICATION_RECORDED',
+    h0,
+    status,
+    verification_ref,
+    target_hash_matches: targetHashMatches,
+    actual_hash_matches: actualHashMatches
+  });
+
+  res.status(accepted ? 200 : 409).json({
+    h0,
+    verification_recorded: true,
+    status,
+    code: accepted ? undefined : 'DEVICE_MISMATCH'
+  });
+});
+
+// ========== نقطة النهاية 5: فتح القفل (Unlock) ==========
 app.post('/v1/unlock', async (req, res) => {
   if (!requireFields(req.body, ['h0'])) {
     return res.status(400).json({ error: 'Missing required field: h0' });
   }
 
-  const { h0, device_fingerprint } = req.body;
+  const { h0 } = req.body;
   const sessionData = await redis.get(`session:${h0}`);
   if (!sessionData) return res.status(404).json({ error: 'Session not found' });
 
@@ -290,14 +417,29 @@ app.post('/v1/unlock', async (req, res) => {
     return res.status(409).json({ error: 'user_unlock already recorded' });
   }
 
+  if (!session.device_verification) {
+    await appendLog({ type: 'USER_UNLOCK_REJECTED', h0, reason: 'DEVICE_NOT_VERIFIED' });
+    return res.status(409).json({ error: 'Device verification is required before unlock', code: 'DEVICE_NOT_VERIFIED' });
+  }
+  if (session.device_verification.status !== 'ACCEPTED') {
+    await appendLog({ type: 'USER_UNLOCK_REJECTED', h0, reason: 'DEVICE_VERIFICATION_REJECTED' });
+    return res.status(409).json({ error: 'Device verification was rejected', code: 'DEVICE_VERIFICATION_REJECTED' });
+  }
+
   session.signals.push({
     type: 'user_unlock',
-    ref: device_fingerprint || 'not_provided',
-    device_fingerprint: device_fingerprint || null,
+    ref: session.device_verification.verification_ref,
+    device_verification_ref: session.device_verification.verification_ref,
+    device_match: true,
     timestamp: Date.now()
   });
 
-  await appendLog({ type: 'USER_UNLOCK_RECORDED', h0, device_fingerprint: device_fingerprint || null });
+  await appendLog({
+    type: 'USER_UNLOCK_RECORDED',
+    h0,
+    verification_ref: session.device_verification.verification_ref,
+    device_match: true
+  });
 
   // Opportunistic proof issuance: if provider_ack already exists, issue H1 immediately.
   const providerAck = session.signals.find(s => s.type === 'provider_ack');
@@ -347,7 +489,7 @@ app.post('/v1/resolve', async (req, res) => {
   if (existingH1) return res.json({ h1: existingH1, status: 'EXECUTION_PROVEN' });
 
   const providerAck = session.signals.find(s => s.type === 'provider_ack');
-  const userUnlock = session.signals.find(s => s.type === 'user_unlock');
+  const userUnlock = session.signals.find(isValidUserUnlock);
   if (!providerAck || !userUnlock) {
     return res.status(400).json({
       error: 'Missing required signals',

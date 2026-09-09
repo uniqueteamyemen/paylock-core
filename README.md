@@ -196,6 +196,12 @@ Creates a new deterministic session in `INITIATED` state.
 {
   "service_id": "premium-vpn",
   "device_id": "device-xyz",
+  "device_type": "desktop",
+  "device_specs": {
+    "cpu": "Intel Core i7",
+    "ram_gb": 16,
+    "gpu": "RTX 3060"
+  },
   "constraints": { "amount": 9.99 },
   "receipt_id": "order-123"
 }
@@ -204,13 +210,13 @@ Creates a new deterministic session in `INITIATED` state.
 **Required fields**
 - `service_id`
 - `device_id`
+- `device_type`
+- `device_specs`
 
 **Optional fields**
 - `service_name`
 - `provider_id`
 - `provider_name`
-- `device_type`
-- `device_specs`
 - `payment_method`
 - `service_url`
 - `constraints`
@@ -273,18 +279,42 @@ Duplicate replays with the same `signal_type` and `signal_ref` are accepted and 
 }
 ```
 
-### 4. Unlock
+### 4. Device Verification
 
-`POST /v1/unlock`
+`POST /v1/device-verification`
 
-Records `user_unlock`. If `provider_ack` already exists, PayLock may issue `H1` immediately.
+The Adapter or digital product entity performs actual-device extraction and canonicalization before unlock, then submits the verification result. Core stores the result against the session and makes the final acceptance decision. A rejected verification cannot create `user_unlock` or produce `H1`.
 
 **Request Body**
 
 ```json
 {
   "h0": "f7c191dd...",
-  "device_fingerprint": "fp-device-001"
+  "device_fingerprint": "adapter-device-fingerprint-001",
+  "target_profile_hash": "sha256-of-canonical-target-profile",
+  "actual_profile_hash": "sha256-of-canonical-actual-profile",
+  "verification_ref": "adapter-verification-001",
+  "decision": "ACCEPT"
+}
+```
+
+Core accepts `ACCEPT` only when both hashes equal the target hash frozen in the session. `REJECT` is recorded as a failed verification. The endpoint is idempotent for the same `verification_ref` and does not allow a different second decision.
+
+The canonical device profile contains exactly `device_type` and `device_specs`. Object keys are sorted recursively; values are not coerced, approximated, trimmed, or compared with tolerance. The SHA-256 hash is computed over the UTF-8 JSON representation of that canonical profile. `device_id` is a requester-defined logical label and is never compared with `device_fingerprint`.
+
+### 5. Unlock
+
+`POST /v1/unlock`
+
+Records the user's unlock action only after an accepted device verification already exists. If `provider_ack` already exists, PayLock may issue `H1` immediately.
+
+`/v1/unlock` does not extract device data and does not receive profile hashes.
+
+**Request Body**
+
+```json
+{
+  "h0": "f7c191dd..."
 }
 ```
 
